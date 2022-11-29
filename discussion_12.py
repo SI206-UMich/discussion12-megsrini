@@ -15,8 +15,11 @@ def setUpDatabase(db_name):
 
 # TASK 1
 # CREATE TABLE FOR EMPLOYEE INFORMATION IN DATABASE AND ADD INFORMATION
+
 def create_employee_table(cur, conn):
-    pass
+    cur.execute("CREATE TABLE IF NOT EXISTS employees (employee_id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, job_id INTEGER, hire_date TEXT, salary INTEGER)")
+    conn.commit()
+    return cur, conn
 
 # ADD EMPLOYEE'S INFORMTION TO THE TABLE
 
@@ -27,20 +30,56 @@ def add_employee(filename, cur, conn):
     file_data = f.read()
     f.close()
     # THE REST IS UP TO YOU
-    pass
+    json_data = json.loads(file_data)
+    for i in json_data:
+        cur.execute("INSERT OR IGNORE INTO employees (employee_id,first_name,last_name, job_id, hire_date, salary) VALUES (?,?,?,?,?,?)",(i["employee_id"],i["first_name"],i["last_name"],i["job_id"],i["hire_date"],i["salary"]))
+    conn.commit()
+    return cur, conn
+
 
 # TASK 2: GET JOB AND HIRE_DATE INFORMATION
 def job_and_hire_date(cur, conn):
-    pass
+    cur.execute("SELECT hire_date, job_title FROM employees INNER JOIN jobs on employees.job_id = jobs.job_id")
+    conn.commit()
+    result = cur.fetchall()
+    return result[0][1]
+
 
 # TASK 3: IDENTIFY PROBLEMATIC SALARY DATA
 # Apply JOIN clause to match individual employees
 def problematic_salary(cur, conn):
-    pass
+    cur.execute("SELECT first_name, last_name FROM employees INNER JOIN jobs on employees.job_id = jobs.job_id WHERE salary < min_salary OR salary > max_salary")
+    conn.commit()
+    result = cur.fetchall()
+    return result
+
 
 # TASK 4: VISUALIZATION
 def visualization_salary_data(cur, conn):
-    pass
+    x = []
+    y = []
+    sal = []
+    res = []
+    other = []
+    cur.execute("SELECT job_title, salary FROM employees INNER JOIN jobs on employees.job_id = jobs.job_id")
+    conn.commit()
+    result = cur.fetchall()
+    for i in result: 
+        x.append(i[0])
+        y.append(i[1])
+    plt.scatter(x, y, c ="blue")
+    plt.xticks(rotation=40)
+    cur.execute("SELECT min_salary, max_salary, job_title FROM jobs")
+    conn.commit()
+    salary = cur.fetchall()
+    for i in salary:
+        res.append(i[2])
+        sal.append(i[0])
+        other.append(i[1])
+    plt.scatter(res, sal, c ="red", marker = 'x')
+    plt.scatter(res, other, c ="red", marker = 'x')
+    plt.show()
+
 
 class TestDiscussion12(unittest.TestCase):
     def setUp(self) -> None:
@@ -62,6 +101,9 @@ class TestDiscussion12(unittest.TestCase):
         self.assertIsInstance(sal_list, list)
         self.assertEqual(sal_list[0], ('Valli', 'Pataballa'))
         self.assertEqual(len(sal_list), 4)
+    
+    def test_visualization(self):
+        visualization_salary_data(self.cur, self.conn)
 
 
 def main():
